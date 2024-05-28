@@ -15,17 +15,25 @@ app.add_middleware(
 @app.post("/upload-las/")
 async def upload_las(file: UploadFile = File(...)):
     contents = await file.read()
-    las_data = lasio.read(contents.decode('utf-8'))
+    las_data = lasio.read(contents.decode('utf-8'))    
+
+    # Get the NULL value
+    null_value = float(las_data.well['NULL'].value)
 
     data = {
-        "DEPT": las_data.index.tolist()
+        "DEPT": [depth for depth in las_data.index]
     }
 
     for curve in las_data.curves:
-        data[curve.mnemonic] = las_data[curve.mnemonic].tolist()
-
-    well_info = {param.mnemonic: param.value for param in las_data.params}
+        data[curve.mnemonic] = [value if value != null_value else None for value in las_data[curve.mnemonic]]
+    
+    well_info = {well.mnemonic: well.value for well in las_data.well}
+    
     data["wellInfo"] = well_info
+
+    # print(type(data))
+    # print(data)
+
 
     return data
 
